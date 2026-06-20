@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>五子棋</title>
+	<style>
+		* { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+		body { background:#fff; }
+		#menu {
+			position:fixed; top:0; left:0; width:100%; height:100%;
+			background:#A0522D; display:flex; flex-direction:column;
+			justify-content:center; align-items:center; color:white;
+		}
+		#menu h1 { font-size:42px; margin-bottom:12px; }
+		#menu p { font-size:18px; margin-bottom:30px; }
+		.menu-btn {
+			width:240px; height:65px; font-size:20px; font-weight:bold;
+			border:none; border-radius:10px; margin:10px;
+			background:#D2691E; color:white; cursor:pointer;
+		}
+		#game { display:none; width:100vw; height:100vh; background:#e6c78d; }
+		#board { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); }
+		#result-box {
+			position:fixed; top:50%; left:50%; transform:translate(-50%,-180%);
+			padding:16px 40px; background:rgba(0,0,0,0.75); color:white;
+			font-size:32px; font-weight:bold; border-radius:12px; text-align:center; display:none;
+		}
+		#end-buttons {
+			position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+			text-align:center; display:none;
+		}
+		.end-btn {
+			width:240px; height:65px; font-size:20px; font-weight:bold;
+			border:none; border-radius:10px; margin:14px 0; color:white; cursor:pointer;
+		}
+		#restart { background:#32CD32; }
+		#home { background:#4682B4; }
+	</style>
+</head>
+<body>
+
+<div id="menu">
+	<h1>五子棋</h1>
+	<p>选择对战模式</p >
+	<button class="menu-btn" onclick="startGame('PvP')">人人对战</button>
+	<button class="menu-btn" onclick="startGame('PvE')">人机对战</button>
+</div>
+
+<div id="game">
+	<canvas id="board"></canvas>
+	<div id="result-box"></div>
+	<div id="end-buttons">
+		<button class="end-btn" id="restart">重新开始</button>
+		<button class="end-btn" id="home">返回主页</button>
+	</div>
+</div>
+
+<script>
+const BOARD_SIZE = 15;
+let canvas, ctx, cellSize, paddingX, paddingY;
+let board, currentPlayer, gameOver, mode;
+const resultBox = document.getElementById("result-box");
+const endButtons = document.getElementById("end-buttons");
+
+function startGame(m) {
+	mode = m;
+	document.getElementById("menu").style.display = "none";
+	document.getElementById("game").style.display = "block";
+	initGame();
+}
+
+function backToMenu() {
+	document.getElementById("game").style.display = "none";
+	document.getElementById("menu").style.display = "flex";
+	endButtons.style.display = "none";
+	resultBox.style.display = "none";
+}
+
+function initGame() {
+	canvas = document.getElementById("board");
+	ctx = canvas.getContext("2d");
+	resizeCanvas();
+	resetGame();
+	drawBoard();
+	canvas.addEventListener("click", onBoardClick);
+	document.getElementById("restart").onclick = resetGame;
+	document.getElementById("home").onclick = backToMenu;
+}
+
+function resizeCanvas() {
+	canvas.width = window.innerWidth;
+	canvas.height = window.innerHeight;
+	const margin = 40;
+	const usable = Math.min(canvas.width, canvas.height) - 2 * margin;
+	cellSize = usable / (BOARD_SIZE - 1);
+	paddingX = (canvas.width - (BOARD_SIZE - 1)*cellSize) / 2;
+	paddingY = (canvas.height - (BOARD_SIZE - 1)*cellSize) / 2;
+}
+
+function resetGame() {
+	board = Array.from({length:BOARD_SIZE},()=>Array(BOARD_SIZE).fill(0));
+	currentPlayer = 1;
+	gameOver = false;
+	resultBox.style.display = "none";
+	endButtons.style.display = "none";
+	drawBoard();
+}
+
+function drawBoard() {
+	ctx.clearRect(0,0,canvas.width,canvas.height);
+	ctx.strokeStyle = "#000";
+	ctx.lineWidth = 1;
+	for(let i=0;i<BOARD_SIZE;i++){
+		const x = paddingX + i*cellSize;
+		ctx.beginPath();
+		ctx.moveTo(x, paddingY);
+		ctx.lineTo(x, paddingY + (BOARD_SIZE-1)*cellSize);
+		ctx.stroke();
+		const y = paddingY + i*cellSize;
+		ctx.beginPath();
+		ctx.moveTo(paddingX, y);
+		ctx.lineTo(paddingX + (BOARD_SIZE-1)*cellSize, y);
+		ctx.stroke();
+	}
+	const stars = [[3,3],[3,11],[11,3],[11,11],[7,7]];
+	stars.forEach(([r,c])=>{
+		const cx = paddingX + c*cellSize;
+		const cy = paddingY + r*cellSize;
+		ctx.beginPath();
+		ctx.arc(cx,cy,3,0,Math.PI*2);
+		ctx.fillStyle="#000";
+		ctx.fill();
+	});
+}
+
+function drawPiece(r,c,p){
+	const cx = paddingX + c*cellSize;
+	const cy = paddingY + r*cellSize;
+	const rad = cellSize/2.5;
+	ctx.beginPath();
+	ctx.arc(cx,cy,rad,0,Math.PI*2);
+	ctx.fillStyle = p===1 ? "#000":"#fff";
+	ctx.fill();
+	ctx.strokeStyle="#000";
+	ctx.lineWidth=2;
+	ctx.stroke();
+}
+
+function onBoardClick(e){
+	if(gameOver)return;
+	const rect=canvas.getBoundingClientRect();
+	const x=e.clientX-rect.left;
+	const y=e.clientY-rect.top;
+	const c=Math.round((x-paddingX)/cellSize);
+	const r=Math.round((y-paddingY)/cellSize);
+	if(r<0||r>=BOARD_SIZE||c<0||c>=BOARD_SIZE||board[r][c]!==0)return;
+	if(mode==="PvE"&&currentPlayer===2)return;
+	placeMove(r,c,currentPlayer);
+	if(!gameOver&&mode==="PvE")setTimeout(aiMove,300);
+}
+
+function placeMove(r,c,p){
+	if(board[r][c]!==0||gameOver)return;
+	board[r][c]=p;
+	drawPiece(r,c,p);
+	if(checkWin(r,c,p)){
+		gameOver=true;
+		resultBox.innerText = p===1?"黑棋获胜":"白棋获胜";
+		resultBox.style.display="block";
+		endButtons.style.display="block";
+	}else if(isBoardFull()){
+		gameOver=true;
+		resultBox.innerText="平局";
+		resultBox.style.display="block";
+		endButtons.style.display="block";
+	}else{
+		currentPlayer=3-p;
+	}
+}
+
+function checkWin(r,c,p){
+	const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+	for(const[dr,dc] of dirs){
+		let cnt=1;
+		let nr=r+dr,nc=c+dc;
+		while(nr>=0&&nr<BOARD_SIZE&&nc>=0&&nc<BOARD_SIZE&&board[nr][nc]===p){cnt++;nr+=dr;nc+=dc;}
+		nr=r-dr;nc=c-dc;
+		while(nr>=0&&nr<BOARD_SIZE&&nc>=0&&nc<BOARD_SIZE&&board[nr][nc]===p){cnt++;nr-=dr;nc-=dc;}
+		if(cnt>=5)return true;
+	}
+	return false;
+}
+
+function isBoardFull(){
+	return board.every(row=>row.every(v=>v!==0));
+}
+
+// ========================= 【终极攻防一体AI：主动铺路】 =========================
+function aiMove() {
+	if (gameOver || currentPlayer !== 2) return;
+
+	// 1. 我能赢，直接下
+	let m = findWin(2); if(m){placeMove(m[0],m[1],2);return;}
+	// 2. 你能赢，必须堵
+	m = findWin(1); if(m){placeMove(m[0],m[1],2);return;}
+	// 3. 我冲四/活四，直接下
+	m = findFour(2); if(m){placeMove(m[0],m[1],2);return;}
+	// 4. 你冲四/活四，必须堵
+	m = findFour(1); if(m){placeMove(m[0],m[1],2);return;}
+	// 5. 我下这个点会形成双三，直接下（主动造杀）
+	m = findDoubleThree(2); if(m){placeMove(m[0],m[1],2);return;}
+	// 6. 你下这个点会形成双三，必须堵
+	m = findDoubleThree(1); if(m){placeMove(m[0],m[1],2);return;}
+	// 7. 我活三，下（铺路进攻）
+	m = findThree(2); if(m){placeMove(m[0],m[1],2);return;}
+	// 8. 你活三，堵
+	m = findThree(1); if(m){placeMove(m[0],m[1],2);return;}
+
+	// 9. 全局最优：优先选能为后续进攻铺路的点
+	let best = -Infinity, pos = null;
+	for(let r=0;r<BOARD_SIZE;r++){
+		for(let c=0;c<BOARD_SIZE;c++){
+			if(board[r][c]!==0)continue;
+			const s = evalPos(r,c,2);
+			if(s>best){best=s;pos=[r,c];}
+		}
+	}
+	if(pos)placeMove(pos[0],pos[1],2);
+}
+
+function findWin(p){
+	for(let r=0;r<BOARD_SIZE;r++){
+		for(let c=0;c<BOARD_SIZE;c++){
+			if(board[r][c]===0){
+				board[r][c]=p;
+				const ok=checkWin(r,c,p);
+				board[r][c]=0;
+				if(ok)return[r,c];
+			}
+		}
+	}
+	return null;
+}
+
+function findFour(p){
+	const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+	for(let r=0;r<BOARD_SIZE;r++){
+		for(let c=0;c<BOARD_SIZE;c++){
+			if(board[r][c]!==0)continue;
+			for(const[dr,dc] of dirs){
+				const a=countLine(r+dr,c+dc,dr,dc,p);
+				const b=countLine(r-dr,c-dc,-dr,-dc,p);
+				if(a+b>=3)return[r,c];
+			}
+		}
+	}
+	return null;
+}
+
+function findThree(p){
+	const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+	for(let r=0;r<BOARD_SIZE;r++){
+		for(let c=0;c<BOARD_SIZE;c++){
+			if(board[r][c]!==0)continue;
+			for(const[dr,dc] of dirs){
+				const a=countLine(r+dr,c+dc,dr,dc,p);
+				const b=countLine(r-dr,c-dc,-dr,-dc,p);
+				if(a+b>=2)return[r,c];
+			}
+		}
+	}
+	return null;
+}
+
+function findDoubleThree(p){
+	const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+	for(let r=0;r<BOARD_SIZE;r++){
+		for(let c=0;c<BOARD_SIZE;c++){
+			if(board[r][c]!==0)continue;
+			board[r][c]=p;
+			let threeCount=0;
+			for(const[dr,dc] of dirs){
+				const a=countLine(r+dr,c+dc,dr,dc,p);
+				const b=countLine(r-dr,c-dc,-dr,-dc,p);
+				if(a+b>=2)threeCount++;
+			}
+			board[r][c]=0;
+			if(threeCount>=2)return[r,c];
+		}
+	}
+	return null;
+}
+
+function countLine(r,c,dr,dc,p){
+	let n=0;
+	while(r>=0&&r<BOARD_SIZE&&c>=0&&c<BOARD_SIZE&&board[r][c]===p){n++;r+=dr;c+=dc;}
+	return n;
+}
+
+// 【关键强化】评估函数：优先选能为后续进攻铺路的点
+function evalPos(r,c,p){
+	let s=0;
+	const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+	for(const[dr,dc] of dirs){
+		const me=countLine(r+dr,c+dc,dr,dc,p)+countLine(r-dr,c-dc,-dr,-dc,p);
+		const you=countLine(r+dr,c+dc,dr,dc,3-p)+countLine(r-dr,c-dc,-dr,-dc,3-p);
+		// 进攻权重
+		if(me>=4)s+=100000;
+		else if(me>=3)s+=10000;
+		else if(me>=2)s+=1000;
+		else if(me>=1)s+=100;
+		// 防守权重
+		if(you>=4)s+=90000;
+		else if(you>=3)s+=8000;
+		else if(you>=2)s+=500;
+	}
+	// 优先选中心和星位，方便后续布局
+	s+=50-Math.abs(r-7)-Math.abs(c-7);
+	return s;
+}
+</script>
+</body>
+</html>

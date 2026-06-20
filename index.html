@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>qiu-chen web</title>
+    <style>
+/* 磁场环绕动画标题样式 */
+        body{
+            background:#050816;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            margin:0;
+        }
+        h1{
+            font-size:60px;
+            color:#fff;
+            position:relative;
+            padding:20px 40px;
+        }
+        /*内层磁场光晕*/
+        h1::before{
+            content:"";
+            position:absolute;
+            top:50%;left:50%;
+            transform:translate(-50%,-50%);
+            width:140%;height:160%;
+            border-radius:999px;
+            background:radial-gradient(circle,rgba(90,160,255,0.4),transparent 70%);
+            animation:magneticRotate 8s linear infinite;
+            z-index:-1;
+        }
+        /*外层磁场波纹*/
+        h1::after{
+            content:"";
+            position:absolute;
+            top:50%;left:50%;
+            transform:translate(-50%,-50%);
+            width:180%;height:200%;
+            border-radius:999px;
+            border:2px solid rgba(120,200,255,0.3);
+            animation:magneticRotate 12s linear infinite reverse;
+            z-index:-2;
+        }
+        /*磁场旋转动画*/
+        @keyframes magneticRotate{
+            0%{transform:translate(-50%,-50%) rotate(0deg) scale(1);}
+            50%{transform:translate(-50%,-50%) rotate(180deg) scale(1.08);}
+            100%{transform:translate(-50%,-50%) rotate(360deg) scale(1);}
+        }
+        /*文字发光脉动*/
+        h1{
+            animation:textGlow 3s ease-in-out infinite alternate;
+            text-shadow:0 0 10px #48a0ff,0 0 25px #3088ff;
+        }
+        @keyframes textGlow{
+            from{text-shadow:0 0 10px #48a0ff,0 0 25px #3088ff;}
+            to{text-shadow:0 0 20px #64b5ff,0 0 40px #4096ff,0 0 60px #2080ff;}
+        }
+
+        button {
+          margin-left: 16px;
+          padding: 6px 12px;
+          border: 1px solid #66ccff;
+          background: rgba(20, 60, 120, 0.4);
+          color: #ffffff;
+          font-size: 14px;
+          border-radius: 3px;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+          box-shadow: 0 0 8px #44aaff, inset 0 0 6px rgba(102,204,255,0.2);
+          transition: all 0.3s ease;
+        }
+
+
+        button:hover {
+          border-color: #99ddff;
+          background: rgba(30, 80, 150, 0.6);
+          box-shadow: 0 0 16px #3399ff, 0 0 28px #0077ff, inset 0 0 10px rgba(102,204,255,0.35);
+          transform: translateY(-2px);
+        }
+
+
+        button:active {
+          transform: translateY(1px);
+          box-shadow: 0 0 6px #2288ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>秋尘的网站</h1>
+    <button id="enter">进入</button>
+    <script>
+        document.getElementById('enter').onclick = function (){
+            window.location.href = "./myweb/main.html"
+        }
+    </script>
+</body>
+</html>

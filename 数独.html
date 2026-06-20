@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数独</title>
+<style>
+:root{--bg:#0e1117;--sf:#161b22;--cd:#1c2333;--bd:#2a3040;--bt:#505868;--tx:#e6edf3;--dm:#8b949e;--ac:#d4a03c;--ad:rgba(212,160,60,.12);--ag:rgba(212,160,60,.3);--ht:#2dd4a8;--hd:rgba(45,212,168,.12);--er:#f85149;--ed:rgba(248,81,73,.1);--cs:52px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;display:flex;flex-direction:column;align-items:center;overflow-x:hidden}
+body::before,body::after{content:'';position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+body::before{top:-180px;right:-120px;width:500px;height:500px;background:radial-gradient(circle,rgba(212,160,60,.06),transparent 70%)}
+body::after{bottom:-200px;left:-150px;width:550px;height:550px;background:radial-gradient(circle,rgba(45,212,168,.04),transparent 70%)}
+.hd{width:100%;max-width:520px;padding:24px 16px 0;position:relative;z-index:1;text-align:center}
+.hd h1{font-size:36px;font-weight:800;letter-spacing:8px;background:linear-gradient(135deg,var(--ac),#f0d078);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hd p{font-size:12px;color:var(--dm);letter-spacing:3px;margin-top:2px}
+.mbar{display:flex;gap:6px;margin:16px 0 12px;position:relative;z-index:1}
+.mb{padding:8px 18px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--dm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.mb:hover{border-color:var(--ac);color:var(--tx)}
+.mb.on{background:var(--ad);border-color:var(--ac);color:var(--ac);box-shadow:0 0 14px var(--ag)}
+.dbar{display:flex;gap:5px;margin-bottom:12px;position:relative;z-index:1;transition:opacity .2s,max-height .3s}
+.dbar.hide{opacity:.35;max-height:0;margin:0;overflow:hidden;pointer-events:none}
+.dbtn{flex:1;padding:8px 0;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--dm);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.dbtn:hover{border-color:var(--ac);color:var(--tx)}
+.dbtn.on{background:var(--ad);border-color:var(--ac);color:var(--ac);box-shadow:0 0 14px var(--ag)}
+.ibar{display:none;align-items:center;gap:12px;padding:10px 16px;margin-bottom:10px;border-radius:10px;background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);position:relative;z-index:1;font-size:13px;color:#c4b5fd;width:100%;max-width:474px;flex-wrap:wrap}
+.ibar.show{display:flex}
+.ibar .ibi{font-size:18px;flex-shrink:0}
+.ibar .ibt{flex:1;min-width:160px}
+.ibar .ibt strong{color:#a78bfa}
+.ibar .ibbs{display:flex;gap:6px}
+.ibar button{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;white-space:nowrap}
+.ibar .bc{background:transparent;border-color:var(--bd);color:var(--dm)}
+.ibar .bc:hover{border-color:var(--er);color:var(--er);background:var(--ed)}
+.ibar .bss{background:linear-gradient(135deg,#a78bfa,#7c5cdb);border-color:transparent;color:#fff}
+.ibar .bss:hover{box-shadow:0 0 16px rgba(167,139,250,.3);transform:translateY(-1px)}
+.ibar .bss:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.info{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:474px;padding:0 2px 10px;position:relative;z-index:1}
+.ii{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--dm)}
+.ii .v{color:var(--tx);font-weight:700;font-size:15px;min-width:26px}
+.bw{position:relative;z-index:1;padding:3px;border-radius:12px;background:linear-gradient(135deg,var(--ac),#f0d078,var(--ac));box-shadow:0 0 40px rgba(212,160,60,.12),0 8px 32px rgba(0,0,0,.4)}
+.bds{display:grid;grid-template-columns:repeat(9,var(--cs));grid-template-rows:repeat(9,var(--cs));border-radius:10px;overflow:hidden;background:var(--bt);gap:0}
+.c{width:var(--cs);height:var(--cs);display:flex;align-items:center;justify-content:center;background:var(--sf);font-size:20px;font-weight:600;cursor:pointer;transition:background .1s;position:relative;user-select:none;border:.5px solid var(--bd)}
+.c.rb{border-right:2.5px solid var(--bt)}
+.c.bb{border-bottom:2.5px solid var(--bt)}
+.c.fx{color:var(--tx);font-weight:700}
+.c.us{color:var(--ac)}
+.c.er{color:var(--er)!important;background:var(--ed)!important}
+.c.hn{color:var(--ht)!important}
+.c.hn::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:14px;height:2px;background:var(--ht);border-radius:1px}
+.c.dfr{background:rgba(167,139,250,.1)!important}
+.c .dd{display:block;font-size:9px;color:#a78bfa;position:absolute;bottom:2px;left:50%;transform:translateX(-50%);line-height:1;font-weight:600}
+.c.hr{background:rgba(212,160,60,.04)}
+.c.hs{background:var(--ad)}
+.c.sl{background:var(--ag)!important;box-shadow:inset 0 0 0 2px var(--ac);z-index:2}
+.c.sa{animation:sp .28s ease-out}
+@keyframes sp{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.c.im{cursor:text}
+.c.im.sl{background:rgba(167,139,250,.2)!important;box-shadow:inset 0 0 0 2px #a78bfa!important}
+.c.im.hr{background:rgba(167,139,250,.06)}
+.c.iv{color:#a78bfa!important;font-weight:700!important}
+.c .nt{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);width:100%;height:100%;padding:1px}
+.c .nt span{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--dm);font-weight:500;line-height:1}
+.np{display:flex;gap:5px;margin-top:14px;position:relative;z-index:1;flex-wrap:wrap;justify-content:center;max-width:500px}
+.nb{width:44px;height:52px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font-size:19px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.nb:hover{border-color:var(--ac);background:var(--ad)}
+.nb:active{transform:scale(.93)}
+.nb .rm{font-size:9px;color:var(--dm);font-weight:400;line-height:1}
+.nb.dn{opacity:.2;pointer-events:none}
+.nb.nz{font-size:15px;color:var(--dm)}
+.nb.nz:hover{border-color:var(--er);color:var(--er);background:var(--ed)}
+body.imode .nb:not(.nz):hover{border-color:#a78bfa;background:rgba(167,139,250,.12)}
+.tb{display:flex;gap:6px;margin-top:10px;position:relative;z-index:1;flex-wrap:wrap;justify-content:center}
+.tn{padding:9px 14px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--dm);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap}
+.tn:hover{border-color:var(--ac);color:var(--tx);background:var(--ad)}
+.tn:active{transform:scale(.95)}
+.tn.na{background:var(--ad);border-color:var(--ac);color:var(--ac)}
+.tn.th:hover{border-color:var(--ht);color:var(--ht);background:var(--hd)}
+.tn.ts{position:relative;overflow:visible}
+.tn.ts:hover{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.1)}
+.tn.te:hover{border-color:var(--er);color:var(--er);background:var(--ed)}
+.tn svg{width:15px;height:15px;flex-shrink:0}
+.sbg{position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#a78bfa;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;line-height:1;box-shadow:0 2px 6px rgba(167,139,250,.4);animation:bp .3s ease-out}
+.sbg.vis{display:flex}
+@keyframes bp{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+/* 解法面板 */
+.spanel{display:none;width:100%;max-width:500px;margin-top:14px;position:relative;z-index:1;background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.spanel.vis{display:block}
+.spanel-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--bd);background:rgba(167,139,250,.06)}
+.spanel-hd .stitle{font-size:13px;font-weight:700;color:#a78bfa;display:flex;align-items:center;gap:6px}
+.spanel-hd .stitle span{font-size:11px;color:var(--dm);font-weight:400}
+.spanel-hd .spg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dm)}
+.spanel-hd .spg .pnum{color:var(--tx);font-weight:700}
+.spanel-hd .spg button{width:28px;height:28px;border:1px solid var(--bd);border-radius:6px;background:var(--cd);color:var(--dm);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.spanel-hd .spg button:hover:not(:disabled){border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.1)}
+.spanel-hd .spg button:disabled{opacity:.3;cursor:not-allowed}
+.spager{position:relative;overflow:hidden;height:150px;touch-action:pan-y}
+.spager-track{display:flex;transition:transform .35s cubic-bezier(.25,.46,.45,.94);height:100%}
+.spager-track.notr{transition:none}
+.spg-page{min-width:100%;padding:8px 10px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start}
+.spg-btn{width:40px;height:28px;border:1px solid var(--bd);border-radius:6px;background:var(--cd);color:var(--dm);font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.spg-btn:hover{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.1)}
+.spg-btn:active{transform:scale(.92)}
+.spg-btn.act{background:#a78bfa;color:#fff;border-color:#a78bfa;box-shadow:0 0 8px rgba(167,139,250,.3)}
+.spanel-ft{padding:6px 14px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:12px;background:rgba(167,139,250,.03)}
+.spanel-ft .sdots{display:flex;gap:3px;flex:1;justify-content:center;flex-wrap:wrap}
+.spanel-ft .sdot{width:6px;height:6px;border-radius:3px;background:var(--bd);cursor:pointer;transition:all .15s}
+.spanel-ft .sdot:hover{background:#a78bfa}
+.spanel-ft .sdot.act{background:#a78bfa;width:18px;border-radius:3px}
+.spanel-ft .sdot.dots-hide{display:none}
+.spanel-ft .sinfo{font-size:10px;color:var(--dm);white-space:nowrap}
+/* 弹窗 */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(6px)}
+.mo.show{display:flex}
+.ml{background:var(--cd);border:1px solid var(--bd);border-radius:20px;padding:36px 44px;text-align:center;box-shadow:0 0 60px rgba(212,160,60,.15);animation:mi .4s ease-out}
+@keyframes mi{from{transform:scale(.8) translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.ml h2{font-size:26px;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,var(--ac),#f0d078);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.ml .sts{margin:16px 0 22px;display:flex;gap:24px;justify-content:center}
+.ml .si{text-align:center}
+.ml .slb{font-size:11px;color:var(--dm);margin-bottom:3px}
+.ml .sv{font-size:20px;font-weight:700;color:var(--tx)}
+.ml button{padding:11px 36px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--ac),#c08a20);color:#0e1117;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+.ml button:hover{transform:translateY(-1px);box-shadow:0 4px 20px var(--ag)}
+.tt{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);padding:10px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transition:transform .3s ease;pointer-events:none;background:var(--cd);border:1px solid var(--bd);color:var(--tx);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.tt.show{transform:translateX(-50%) translateY(0)}
+.tt.te{border-color:var(--er);color:var(--er)}
+.tt.ts{border-color:var(--ht);color:var(--ht)}
+.tt.tw{border-color:#a78bfa;color:#a78bfa}
+canvas#pt{position:fixed;inset:0;pointer-events:none;z-index:0}
+@media(max-width:520px){:root{--cs:40px}.hd h1{font-size:28px;letter-spacing:5px}.nb{width:36px;height:44px;font-size:16px}.nb .rm{font-size:8px}.tn{font-size:11px;padding:8px 10px}.ml{padding:28px 20px}.ibar{font-size:12px;gap:8px;padding:8px 12px}.spg-btn{width:34px;height:26px;font-size:10px}.spanel-hd{padding:8px 10px}}
+@media(max-width:390px){:root{--cs:35px}.c .nt span{font-size:7px}.nb{width:31px;height:40px;font-size:14px}.dbtn{font-size:11px;padding:7px 0}.spg-btn{width:30px;height:24px;font-size:9px}}
+</style>
+</head>
+<body>
+<canvas id="pt"></canvas>
+<div class="hd"><h1>数独</h1><p>SUDOKU PUZZLE</p></div>
+<div class="mbar">
+  <button class="mb on" id="mP" onclick="switchMode('play')">随机游戏</button>
+  <button class="mb" id="mI" onclick="switchMode('input')">输入题目</button>
+</div>
+<div class="dbar" id="dbar">
+  <button class="dbtn on" data-d="easy" onclick="setDiff(this)">简单</button>
+  <button class="dbtn" data-d="medium" onclick="setDiff(this)">中等</button>
+  <button class="dbtn" data-d="hard" onclick="setDiff(this)">困难</button>
+  <button class="dbtn" data-d="master" onclick="setDiff(this)">大师</button>
+</div>
+<div class="ibar" id="ibar">
+  <span class="ibi">&#9998;</span>
+  <span class="ibt">点击格子输入数字。<strong>空格将作为待填区域。</strong></span>
+  <div class="ibbs">
+	<button class="bc" onclick="clearInput()">清空</button>
+	<button class="bss" id="bSt" onclick="confirmInput()">开始解题</button>
+  </div>
+</div>
+<div class="info">
+  <div class="ii"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span class="v" id="tmr">00:00</span></div>
+  <div class="ii" id="eBox"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--er)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span class="v" id="ecnt">0</span><span>/3</span></div>
+  <div class="ii" id="hBox"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ac)" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg><span class="v" id="hcnt">3</span></div>
+</div>
+<div class="bw"><div class="bds" id="bds"></div></div>
+<div class="np" id="npad"></div>
+<div class="tb">
+  <button class="tn" id="nbtn" onclick="togNote()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>笔记</button>
+  <button class="tn" onclick="doUndo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a5 5 0 015 5v2"/><path d="M3 10l4-4M3 10l4 4"/></svg>撤销</button>
+  <button class="tn te" onclick="eraseCell()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l9-9 8 8-4 4z"/><path d="M6.5 13.5l5 5"/></svg>擦除</button>
+  <button class="tn th" onclick="useHint()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 00-4 12.7V17h8v-2.3A7 7 0 0012 2z"/></svg>提示</button>
+  <button class="tn ts" id="sbtn" onclick="doSolve()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M9 9l2 2 4-4"/></svg>自动解<span class="sbg" id="sBadge">?</span></button>
+</div>
+<!-- 解法面板 -->
+   <div class="spanel" id="spanel">
+  <div class="spanel-hd">
+	<div class="stitle">全部解法 <span id="stotal"></span></div>
+	<div class="spg">
+	  <button id="spPrev" onclick="solPage(-1)">&lsaquo;</button>
+	  <span><span class="pnum" id="spCur">1</span> / <span id="spAll">1</span></span>
+	  <button id="spNext" onclick="solPage(1)">&rsaquo;</button>
+	</div>
+  </div>
+  <div class="spager" id="spager">
+	<div class="spager-track" id="spTrack"></div>
+  </div>
+  <div class="spanel-ft">
+	<div class="sdots" id="sdots"></div>
+	<div class="sinfo" id="sinfo"></div>
+  </div>
+</div>
+<div class="mo" id="moW">
+  <div class="ml">
+	<h2>恭喜完成</h2>
+	<p style="color:var(--dm);font-size:13px">你成功解出了这道数独</p>
+	<div class="sts">
+	  <div class="si"><div class="slb">用时</div><div class="sv" id="mt">--</div></div>
+	  <div class="si"><div class="slb">错误</div><div class="sv" id="me">--</div></div>
+	  <div class="si"><div class="slb">难度</div><div class="sv" id="md2">--</div></div>
+	</div>
+	<button onclick="closeMo('moW');newGame()">再来一局</button>
+  </div>
+</div>
+<div class="tt" id="tt"></div>
+<script>
+/* ====== 状态 ====== */
+var grid=[],sol=[],fix=[],nts=[],sel=-1,noteOn=false,diff='easy';
+var errs=0,hints=3,tsec=0,tint=null,hist=[],solving=false,over=false;
+var mode='play',solCount=0,lastSolNum=null,showDiff=false;
+var solPageCur=1, solPerPage=50, solActiveIdx=0, allSolutions=[];
+var HOLES={easy:36,medium:44,hard:52,master:58};
+var DLBL={easy:'简单',medium:'中等',hard:'困难',master:'大师'};
+/* ====== 工具 ====== */
+function shuf(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
+function ok(g,r,c,n){var i,br,bc;for(i=0;i<9;i++){if(g[r][i]===n||g[i][c]===n)return false}br=Math.floor(r/3)*3;bc=Math.floor(c/3)*3;for(i=br;i<br+3;i++)for(var j=bc;j<bc+3;j++)if(g[i][j]===n)return false;return true}
+function cntFill(g){var c=0;for(var i=0;i<9;i++)for(var j=0;j<9;j++)if(g[i][j]!==0)c++;return c}
+function fillG(g){for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;if(g[r][c]===0){var ns=shuf([1,2,3,4,5,6,7,8,9]);for(var k=0;k<9;k++){if(ok(g,r,c,ns[k])){g[r][c]=ns[k];if(fillG(g))return true;g[r][c]=0}}return false}}return true}
+function genPuzzle(){var g=[],i,j;for(i=0;i<9;i++){g.push([]);for(j=0;j<9;j++)g[i].push(0)}fillG(g);sol=g.map(function(r){return r.slice()});var p=g.map(function(r){return r.slice()});var pos=shuf(Array.from({length:81},function(_,i){return i}));var cnt=HOLES[diff];for(i=0;i<cnt;i++){var r=Math.floor(pos[i]/9),c=pos[i]%9;p[r][c]=0}return p}
+/* 收集所有解法（上限max个） */
+function collectSolutions(g,max){
+ var results=[];
+ var cp=g.map(function(r){return r.slice()});
+ function rec(){
+  if(results.length>=max)return;
+  for(var i=0;i<81;i++){
+   var r=Math.floor(i/9),c=i%9;
+   if(cp[r][c]===0){
+	for(var n=1;n<=9;n++){
+	 if(ok(cp,r,c,n)){cp[r][c]=n;rec();if(results.length>=max)return;cp[r][c]=0}
+	}
+	return;
+   }
+  }
+  results.push(cp.map(function(r){return r.slice()}));
+ }
+ rec();
+ return results;
+}
+/* ====== DOM构建 ====== */
+function buildBoard(){var bd=document.getElementById('bds');bd.innerHTML='';for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;var d=document.createElement('div');d.className='c';d.setAttribute('data-i',String(i));if(c===2||c===5)d.classList.add('rb');if(r===2||r===5)d.classList.add('bb');d.addEventListener('click',(function(idx){return function(){selCell(idx)}})(i));bd.appendChild(d)}}
+function buildPad(){var np=document.getElementById('npad');np.innerHTML='';for(var n=0;n<=9;n++){var b=document.createElement('button');b.className='nb';b.setAttribute('data-n',String(n));if(n===0){b.classList.add('nz');b.innerHTML='<span>0</span><span class="rm">擦除</span>'}else{b.innerHTML='<span>'+n+'</span><span class="rm"></span>'}b.addEventListener('click',(function(num){return function(){if(num===0)eraseCell();else inputNum(num)}})(n));np.appendChild(b)}}
+/* ====== 渲染棋盘 ====== */
+function render(){var cells=document.querySelectorAll('.c');var sr=sel>=0?Math.floor(sel/9):-1;var sc=sel>=0?sel%9:-1;var sbr=sr>=0?Math.floor(sr/3)*3:-1;var sbc=sc>=0?Math.floor(sc/3)*3:-1;var sv=sel>=0?grid[sr][sc]:0;var isI=(mode==='input');
+				  for(var k=0;k<cells.length;k++){var cell=cells[k];var r=Math.floor(k/9),c=k%9;var v=grid[r][c];var br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;
+												  cell.className='c';if(c===2||c===5)cell.classList.add('rb');if(r===2||r===5)cell.classList.add('bb');cell.innerHTML='';
+												  if(isI)cell.classList.add('im');
+												  if(v!==0){cell.textContent=v;if(isI){cell.classList.add('iv')}else{if(fix[r][c]){cell.classList.add('fx')}else{cell.classList.add('us');if(v!==sol[r][c])cell.classList.add('er');if(cell.getAttribute('data-h')==='1')cell.classList.add('hn');if(showDiff&&!fix[r][c]&&lastSolNum&&v!==lastSolNum[r][c]){cell.classList.add('dfr');var dd=document.createElement('span');dd.className='dd';dd.textContent=lastSolNum[r][c];cell.appendChild(dd)}}}}else if(!isI){var ns=nts[r][c];if(ns&&ns.size>0){var div=document.createElement('div');div.className='nt';for(var n=1;n<=9;n++){var s=document.createElement('span');s.textContent=ns.has(n)?n:'';div.appendChild(s)}cell.appendChild(div)}}
+												  if(sel>=0&&k!==sel){if(r===sr||c===sc||(br===sbr&&bc===sbc))cell.classList.add('hr');if(!isI&&sv!==0&&v===sv)cell.classList.add('hs')}
+												  if(k===sel)cell.classList.add('sl')}
+				  for(var n=1;n<=9;n++){var cnt=0;for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(grid[r][c]===n)cnt++;var btn=document.querySelector('.nb[data-n="'+n+'"]');if(btn){btn.querySelector('.rm').textContent=isI?'':(9-cnt);btn.classList.toggle('dn',!isI&&cnt>=9)}}
+				  document.getElementById('ecnt').textContent=errs;document.getElementById('hcnt').textContent=hints;
+				  var stb=document.getElementById('bSt');if(stb)stb.disabled=(cntFill(grid)<17);
+				  var badge=document.getElementById('sBadge');if(mode==='play'&&solCount>0){badge.classList.add('vis');badge.textContent=solCount>=1000?'999+':String(solCount)}else{badge.classList.remove('vis')}}
+/* ====== 解法面板 ====== */
+function showSolPanel(){
+ var panel=document.getElementById('spanel');
+ panel.classList.add('vis');
+ solPageCur=1;solActiveIdx=0;
+ buildSolPages();
+ goSolPage(1,false);
+}
+function hideSolPanel(){document.getElementById('spanel').classList.remove('vis')}
+function buildSolPages(){
+ var total=solCount;var perPage=solPerPage;var pages=Math.ceil(total/perPage);
+ document.getElementById('stotal').textContent='(共'+total+'种)';
+ document.getElementById('spAll').textContent=String(pages);
+ var track=document.getElementById('spTrack');track.innerHTML='';track.classList.add('notr');
+ for(var p=0;p<pages;p++){
+  var pg=document.createElement('div');pg.className='spg-page';
+  var start=p*perPage;var end=Math.min(start+perPage,total);
+  for(var i=start;i<end;i++){
+   var btn=document.createElement('button');btn.className='spg-btn';
+   if(i===solActiveIdx)btn.classList.add('act');
+   btn.textContent=String(i+1);
+   btn.setAttribute('data-si',String(i));
+   btn.addEventListener('click',(function(idx){return function(){applySolution(idx)}})(i));
+   pg.appendChild(btn);
+  }
+  track.appendChild(pg);
+ }
+ /* 页码点 */
+ var dots=document.getElementById('sdots');dots.innerHTML='';
+ if(pages<=30){
+  for(var i=0;i<pages;i++){
+   var dot=document.createElement('div');dot.className='sdot';
+   if(i===0)dot.classList.add('act');
+   dot.setAttribute('data-p',String(i+1));
+   dot.addEventListener('click',(function(pg){return function(){goSolPage(pg,true)}})(i+1));
+   dots.appendChild(dot);
+  }
+ }else{
+  /* 太多页时显示省略 */
+  for(var i=0;i<pages;i++){
+   var dot=document.createElement('div');dot.className='sdot';
+   if(i===0)dot.classList.add('act');
+   if(i>2&&i<pages-3)dot.classList.add('dots-hide');
+   dot.setAttribute('data-p',String(i+1));
+   dot.addEventListener('click',(function(pg){return function(){goSolPage(pg,true)}})(i+1));
+   dots.appendChild(dot);
+  }
+ }
+ /* 触摸拖动 */
+ setupSwipe();
+}
+function goSolPage(pg,animate){
+ var pages=Math.ceil(solCount/solPerPage);
+ pg=Math.max(1,Math.min(pg,pages));
+ solPageCur=pg;
+ var track=document.getElementById('spTrack');
+ if(animate!==false)track.classList.remove('notr');else track.classList.add('notr');
+ track.style.transform='translateX(-'+(pg-1)*100+'%)';
+ document.getElementById('spCur').textContent=String(pg);
+ document.getElementById('spPrev').disabled=(pg<=1);
+ document.getElementById('spNext').disabled=(pg>=pages);
+ /* 更新页码点 */
+ var allDots=document.querySelectorAll('.sdot');
+ for(var i=0;i<allDots.length;i++){
+  var dp=parseInt(allDots[i].getAttribute('data-p'));
+  allDots[i].classList.toggle('act',dp===pg);
+ }
+ /* 更新底部信息 */
+ var start=(pg-1)*solPerPage+1;var end=Math.min(pg*solPerPage,solCount);
+ document.getElementById('sinfo').textContent='显示第'+start+'-'+end+'种';
+}
+function solPage(dir){goSolPage(solPageCur+dir,true)}
+/* 触摸/鼠标拖动翻页 */
+function setupSwipe(){
+ var pager=document.getElementById('spager');
+ var track=document.getElementById('spTrack');
+ var startX=0,startY=0,deltaX=0,dragging=false;
+ function onDown(e){var ev=e.touches?e.touches[0]:e;startX=ev.clientX;startY=ev.clientY;deltaX=0;dragging=true;track.classList.add('notr')}
+ function onMove(e){if(!dragging)return;var ev=e.touches?e.touches[0]:e;deltaX=ev.clientX-startX;var dy=Math.abs(ev.clientY-startY);if(Math.abs(deltaX)>dy&&Math.abs(deltaX)>5){if(e.cancelable)e.preventDefault()}track.style.transform='translateX(calc(-'+(solPageCur-1)*100+'% + '+deltaX+'px))'}
+ function onUp(){if(!dragging)return;dragging=false;var pages=Math.ceil(solCount/solPerPage);if(deltaX<-40&&solPageCur<pages){goSolPage(solPageCur+1,true)}else if(deltaX>40&&solPageCur>1){goSolPage(solPageCur-1,true)}else{goSolPage(solPageCur,false)}}
+ pager.removeEventListener('mousedown',onDown);pager.removeEventListener('touchstart',onDown);
+ pager.removeEventListener('mousemove',onMove);pager.removeEventListener('touchmove',onMove);
+ pager.removeEventListener('mouseup',onUp);pager.removeEventListener('mouseleave',onUp);
+ pager.removeEventListener('touchend',onUp);
+ pager.addEventListener('mousedown',onDown);pager.addEventListener('touchstart',onDown,{passive:true});
+ pager.addEventListener('mousemove',onMove);pager.addEventListener('touchmove',onMove,{passive:false});
+ pager.addEventListener('mouseup',onUp);pager.addEventListener('mouseleave',onUp);
+ pager.addEventListener('touchend',onUp);
+}
+/* 应用某个解法 */
+function applySolution(idx){
+ if(idx<0||idx>=allSolutions.length)return;
+ var prevSol=sol?sol.map(function(r){return r.slice()}):null;
+ sol=allSolutions[idx].map(function(r){return r.slice()});
+ lastSolNum=prevSol;showDiff=true;solActiveIdx=idx;
+ /* 逐格动画填入 */solving=true;sel=-1;
+ var steps=[];for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;if(grid[r][c]!==sol[r][c])steps.push({r:r,c:c,n:sol[r][c] })}
+ var si=0;function next(){if(si>=steps.length){solving=false;over=true;stopTm();render();updateSolBtnState();showTt('已展示第'+(idx+1)+'种解法','s');return}var s=steps[si];grid[s.r][s.c]=s.n;nts[s.r][s.c]=new Set();render();document.querySelectorAll('.c')[s.r*9+s.c].classList.add('sa');si++;setTimeout(next,16)}next();
+}
+function updateSolBtnState(){
+ var allBtns=document.querySelectorAll('.spg-btn');
+ for(var i=0;i<allBtns.length;i++){
+  var si=parseInt(allBtns[i].getAttribute('data-si'));
+  allBtns[i].classList.toggle('act',si===solActiveIdx);
+ }
+}
+/* ====== 模式切换 ====== */
+function switchMode(m){if(m===mode)return;mode=m;showDiff=false;lastSolNum=null;hideSolPanel();
+					   document.getElementById('mP').classList.toggle('on',m==='play');document.getElementById('mI').classList.toggle('on',m==='input');
+					   document.getElementById('ibar').classList.toggle('show',m==='input');document.getElementById('dbar').classList.toggle('hide',m==='input');
+					   document.body.classList.toggle('imode',m==='input');
+					   document.getElementById('eBox').style.opacity=m==='input'?'0.3':'1';document.getElementById('hBox').style.opacity=m==='input'?'0.3':'1';
+					   if(m==='input'){stopTm();tsec=0;updTm();solving=false;over=false;sel=-1;noteOn=false;hist=[];errs=0;hints=3;solCount=0;lastSolNum=null;allSolutions=[];document.getElementById('nbtn').classList.remove('na');grid=[];sol=[];fix=[];nts=[];for(var i=0;i<9;i++){grid.push([]);fix.push([]);nts.push([]);for(var j=0;j<9;j++){grid[i].push(0);fix[i].push(false);nts[i].push(new Set())}}var allC=document.querySelectorAll('.c');for(var i=0;i<allC.length;i++)allC[i].removeAttribute('data-h');render()}else{newGame()}}
+/* ====== 输入模式 ====== */
+function clearInput(){if(mode!=='input')return;for(var i=0;i<9;i++)for(var j=0;j<9;j++)grid[i][j]=0;sel=-1;render();showTt('已清空所有输入','w')}
+function confirmInput(){if(mode!=='input')return;if(cntFill(grid)<17){showTt('至少需要填入17个数字','e');return}
+						for(var r=0;r<9;r++)for(var c=0;c<9;c++){if(grid[r][c]!==0){var v=grid[r][c];grid[r][c]=0;if(!ok(grid,r,c,v)){grid[r][c]=v;showTt('第'+(r+1)+'行第'+(c+1)+'列存在冲突','e');return}grid[r][c]=v}}
+						var testG=grid.map(function(r){return r.slice()});var testSol=collectSolutions(testG,2);
+						if(testSol.length===0){showTt('该题目无解，请检查输入','e');return}
+						solCount=countSolutionsFull(grid,1001);allSolutions=collectSolutions(grid,Math.min(solCount,1001));
+						sol=allSolutions[0].map(function(r){return r.slice()});fix=grid.map(function(r){return r.map(function(v){return v!==0})});nts=[];for(var i=0;i<9;i++){nts.push([]);for(var j=0;j<9;j++)nts[i].push(new Set())}errs=0;hints=3;noteOn=false;sel=-1;hist=[];solving=false;over=false;lastSolNum=null;showDiff=false;solActiveIdx=0;document.getElementById('nbtn').classList.remove('na');
+						mode='play';document.getElementById('mP').classList.add('on');document.getElementById('mI').classList.remove('on');document.getElementById('ibar').classList.remove('show');document.getElementById('dbar').classList.remove('hide');document.body.classList.remove('imode');document.getElementById('eBox').style.opacity='1';document.getElementById('hBox').style.opacity='1';var allD=document.querySelectorAll('.dbtn');for(var i=0;i<allD.length;i++)allD[i].classList.remove('on');var allC=document.querySelectorAll('.c');for(var i=0;i<allC.length;i++)allC[i].removeAttribute('data-h');
+						render();startTm();showSolPanel();
+						var msg='题目已载入';if(solCount===1)msg+='，唯一解';else if(solCount>=1001)msg+='，解法极多(1000+)';else msg+='，共'+solCount+'种解法';showTt(msg,'s')}
+/* 快速计数（不保存解） */
+function countSolutionsFull(g,max){var count=0;var cp=g.map(function(r){return r.slice()});function rec(){if(count>=max)return;for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;if(cp[r][c]===0){for(var n=1;n<=9;n++){if(ok(cp,r,c,n)){cp[r][c]=n;rec();if(count>=max)return;cp[r][c]=0}}return}}count++}rec();return count}
+/* ====== 游戏操作 ====== */
+function selCell(i){if(solving||over)return;sel=i;render()}
+function inputNum(n){if(solving||over||sel<0)return;if(mode==='input'){grid[Math.floor(sel/9)][sel%9]=n;render();return}var r=Math.floor(sel/9),c=sel%9;if(fix[r][c])return;
+					 if(noteOn){if(grid[r][c]!==0)return;var ns=nts[r][c];hist.push({t:'n',r:r,c:c,n:n,h:ns.has(n)});if(ns.has(n))ns.delete(n);else ns.add(n)}else{var pv=grid[r][c];var pn=new Set(nts[r][c]);hist.push({t:'i',r:r,c:c,p:pv,pn:pn});grid[r][c]=n;nts[r][c]=new Set();clrNotes(r,c,n);if(n!==sol[r][c]){errs++;if(errs>=3){over=true;stopTm();showTt('错误次数已达上限，游戏结束','e');setTimeout(newGame,2000);render();return}}if(chkDone()){over=true;stopTm();setTimeout(showWin,400)}}render()}
+function eraseCell(){if(solving||over||sel<0)return;var r=Math.floor(sel/9),c=sel%9;if(mode==='input'){grid[r][c]=0;render();return}if(fix[r][c])return;if(grid[r][c]===0&&nts[r][c].size===0)return;hist.push({t:'e',r:r,c:c,p:grid[r][c],pn:new Set(nts[r][c])});grid[r][c]=0;nts[r][c]=new Set();render()}
+function clrNotes(r,c,n){for(var i=0;i<9;i++){nts[r][i].delete(n);nts[i][c].delete(n)}var br=Math.floor(r/3)*3,bc=Math.floor(c/3)*3;for(var i=br;i<br+3;i++)for(var j=bc;j<bc+3;j++)nts[i][j].delete(n)}
+function doUndo(){if(solving||over||hist.length===0)return;var h=hist.pop();if(h.t==='i'){grid[h.r][h.c]=h.p;nts[h.r][h.c]=h.pn}else if(h.t==='n'){if(h.h)nts[h.r][h.c].add(h.n);else nts[h.r][h.c].delete(h.n)}else if(h.t==='e'){grid[h.r][h.c]=h.p;nts[h.r][h.c]=h.pn}render()}
+function useHint(){if(solving||over||mode==='input')return;if(hints<=0){showTt('提示次数已用完','e');return}var tgt=-1;if(sel>=0){var r=Math.floor(sel/9),c=sel%9;if(!fix[r][c]&&grid[r][c]!==sol[r][c])tgt=sel}if(tgt<0){var emp=[];for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;if(!fix[r][c]&&grid[r][c]!==sol[r][c])emp.push(i)}if(emp.length===0)return;tgt=emp[Math.floor(Math.random()*emp.length)]}var r=Math.floor(tgt/9),c=tgt%9;hints--;hist.push({t:'i',r:r,c:c,p:grid[r][c],pn:new Set(nts[r][c])});grid[r][c]=sol[r][c];nts[r][c]=new Set();clrNotes(r,c,sol[r][c]);document.querySelectorAll('.c')[tgt].setAttribute('data-h','1');sel=tgt;render();showTt('已填入正确数字','s');if(chkDone()){over=true;stopTm();setTimeout(showWin,400)}}
+function doSolve(){if(solving||over||mode==='input')return;
+				   /* 如果还没收集过解法，先收集 */if(allSolutions.length===0){showTt('正在计算解法...','tw');setTimeout(function(){doSolveReal()},30)}else{doSolveReal()}}
+function doSolveReal(){if(allSolutions.length===0){allSolutions=collectSolutions(grid,1001);solCount=allSolutions.length}
+					   if(allSolutions.length===0){showTt('无解','e');return}
+					   /* 显示解法面板（如果还没显示） */if(!document.getElementById('spanel').classList.contains('vis')){showSolPanel()}
+					   /* 随机选一个不同于当前的解法 */var idx=solActiveIdx;if(allSolutions.length>1){var tries=0;while(idx===solActiveIdx&&tries<20){idx=Math.floor(Math.random()*allSolutions.length);tries++}}
+					   applySolution(idx);
+					   /* 跳转到该解法所在页 */var targetPage=Math.floor(idx/solPerPage)+1;if(targetPage!==solPageCur)goSolPage(targetPage,true)}
+function chkDone(){for(var r=0;r<9;r++)for(var c=0;c<9;c++)if(grid[r][c]!==sol[r][c])return false;return true}
+function togNote(){if(mode==='input')return;noteOn=!noteOn;document.getElementById('nbtn').classList.toggle('na',noteOn)}
+/* ====== 计时 ====== */
+function startTm(){stopTm();tsec=0;updTm();tint=setInterval(function(){tsec++;updTm()},1000)}
+function stopTm(){if(tint){clearInterval(tint);tint=null}}
+function updTm(){var m=String(Math.floor(tsec/60)).padStart(2,'0');var s=String(tsec%60).padStart(2,'0');document.getElementById('tmr').textContent=m+':'+s}
+function fmtTm(sec){var m=Math.floor(sec/60),s=sec%60;return m>0?m+'分'+s+'秒':s+'秒'}
+/* ====== 提示弹窗 ====== */
+function showTt(msg,type){var t=document.getElementById('tt');t.textContent=msg;t.className='tt show'+(type==='e'?' te':type==='s'?' ts':type==='w'?' tw':'');setTimeout(function(){t.classList.remove('show')},2500)}
+function showWin(){document.getElementById('mt').textContent=fmtTm(tsec);document.getElementById('me').textContent=errs+'次';var dl=mode==='input'?'自定义':DLBL[diff];if(solCount>1)dl+='('+solCount+'解)';document.getElementById('md2').textContent=dl;document.getElementById('moW').classList.add('show')}
+function closeMo(id){document.getElementById(id).classList.remove('show')}
+/* ====== 难度/新游戏 ====== */
+function setDiff(btn){if(mode==='input')return;document.querySelectorAll('.dbtn').forEach(function(b){b.classList.remove('on')});btn.classList.add('on');diff=btn.getAttribute('data-d');newGame()}
+function newGame(){if(mode!=='play'){switchMode('play');return}solving=false;over=false;errs=0;hints=3;noteOn=false;sel=-1;hist=[];solCount=0;lastSolNum=null;showDiff=false;allSolutions=[];solActiveIdx=0;hideSolPanel();document.getElementById('nbtn').classList.remove('na');var p=genPuzzle();grid=p.map(function(r){return r.slice()});fix=p.map(function(r){return r.map(function(v){return v!==0})});nts=[];for(var i=0;i<9;i++){nts.push([]);for(var j=0;j<9;j++)nts[i].push(new Set())}
+				   /* 统计解法 */solCount=countSolutionsFull(grid,1001);allSolutions=collectSolutions(grid,Math.min(solCount,1001));
+				   var allC=document.querySelectorAll('.c');for(var i=0;i<allC.length;i++)allC[i].removeAttribute('data-h');render();startTm();
+				   /* 多解时自动展示面板 */if(solCount>1){showSolPanel()}}
+/* ====== 键盘 ====== */
+document.addEventListener('keydown',function(e){if(solving||over)return;var k=e.key;if(k>='1'&&k<='9'){inputNum(parseInt(k));e.preventDefault()}else if(k==='0'||k==='Backspace'||k==='Delete'){eraseCell();e.preventDefault()}else if(k==='n'||k==='N'){togNote();e.preventDefault()}else if(k==='z'&&(e.ctrlKey||e.metaKey)){doUndo();e.preventDefault()}else if(k==='ArrowUp'&&sel>=9){selCell(sel-9);e.preventDefault()}else if(k==='ArrowDown'&&sel<72){selCell(sel+9);e.preventDefault()}else if(k==='ArrowLeft'&&sel>0){selCell(sel-1);e.preventDefault()}else if(k==='ArrowRight'&&sel<80){selCell(sel+1);e.preventDefault()}else if(k==='Escape'){sel=-1;render()}});
+/* ====== 粒子 ====== */
+(function(){var cv=document.getElementById('pt');var cx=cv.getContext('2d');var w,h,ps=[];function rs(){w=cv.width=window.innerWidth;h=cv.height=window.innerHeight}rs();window.addEventListener('resize',rs);for(var i=0;i<28;i++)ps.push({x:Math.random()*2000,y:Math.random()*2000,r:Math.random()*1.5+.5,dx:(Math.random()-.5)*.2,dy:(Math.random()-.5)*.2,a:Math.random()*.2+.04});var pr=window.matchMedia('(prefers-reduced-motion:reduce)').matches;function dr(){if(pr)return;cx.clearRect(0,0,w,h);for(var i=0;i<ps.length;i++){var p=ps[i];p.x+=p.dx;p.y+=p.dy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;cx.beginPath();cx.arc(p.x,p.y,Math.max(.1,p.r),0,Math.PI*2);cx.fillStyle='rgba(212,160,60,'+p.a+')';cx.fill()}requestAnimationFrame(dr)}dr()})();
+/* ====== 启动 ====== */
+buildBoard();buildPad();newGame();
+</script>
+</body>
+</html>
